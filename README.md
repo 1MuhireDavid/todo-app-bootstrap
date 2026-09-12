@@ -49,11 +49,16 @@ writes to on every build. Clean lines lost to a dependency cycle.
 
 ## Deploy
 
+Create the CloudFormation execution role first — see [`iam/`](iam/) — then pass
+it with `--role-arn`, so the stack is bounded by its own policy rather than by
+whatever your console user happens to be allowed to do.
+
 ```bash
 aws cloudformation create-stack \
   --stack-name todo-app-bootstrap \
   --template-body file://00-bootstrap.yaml \
   --capabilities CAPABILITY_NAMED_IAM \
+  --role-arn arn:aws:iam::047719661196:role/todo-app-cfn-exec-bootstrap \
   --region us-east-1 \
   --parameters \
       ParameterKey=ProjectName,ParameterValue=todo-app \
