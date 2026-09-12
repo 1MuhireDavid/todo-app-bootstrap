@@ -1,0 +1,36 @@
+# CloudFormation Git sync deployment file for the bootstrap stack.
+#
+# The bootstrap stack is normally created once by hand - see the README. This
+# file is here so that later changes to it go through the same reviewed,
+# versioned path as everything else rather than through a console form.
+#
+# If you wire up Git sync, point it at this file with a stack name of
+# todo-app-bootstrap. Keep it a separate sync configuration from the
+# application stack in todo-app-infra: the two have deliberately different
+# lifecycles, and this one is close to permanent.
+
+template-file-path: 00-bootstrap.yaml
+
+parameters:
+  ProjectName: todo-app
+  RootStackName: todo-app
+
+  GitHubOwner: 1MuhireDavid
+  InfraRepoName: todo-app-infra
+  AppRepoName: todo-app
+  GitHubBranch: main
+  InfraWorkflowFile: package-templates.yml
+  AppWorkflowFile: build-and-push.yml
+
+  # The GitHub OIDC provider already exists in account 047719661196, and an
+  # account may hold only one per URL. Set this to "true" only in a fresh
+  # account that has never federated GitHub Actions.
+  CreateOIDCProvider: "false"
+
+  ImagesToRetain: 5
+  TemplateRetentionDays: 30
+
+tags:
+  Project: todo-app
+  Environment: lab
+  ManagedBy: cloudformation-git-sync

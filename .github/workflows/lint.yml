@@ -1,0 +1,52 @@
+name: Lint
+
+# Validates the template on every change. Needs no AWS credentials and holds no
+# permissions beyond reading the checkout: this repository never deploys itself
+# from CI, it is applied by hand or by CloudFormation Git sync.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "00-bootstrap.yaml"
+      - "deployment-file.yaml"
+      - ".github/workflows/lint.yml"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: cfn-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install cfn-lint
+        run: pip install --quiet cfn-lint
+
+      - name: Lint template
+        run: |
+          set -euo pipefail
+          cfn-lint 00-bootstrap.yaml
+
+      - name: Check the deployment file points at a template that exists
+        run: |
+          set -euo pipefail
+          path="$(grep '^template-file-path:' deployment-file.yaml | awk '{print $2}')"
+          if [[ ! -f "$path" ]]; then
+            echo "::error file=deployment-file.yaml::template-file-path points at ${path}, which does not exist. Git sync would fail at apply time."
+            exit 1
+          fi
+          echo "deployment-file.yaml -> ${path}"
