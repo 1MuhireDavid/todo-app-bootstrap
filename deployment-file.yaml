@@ -27,7 +27,6 @@ parameters:
   # account that has never federated GitHub Actions.
   CreateOIDCProvider: "false"
 
-  ImagesToRetain: 5
   TemplateRetentionDays: 30
 
 tags:
