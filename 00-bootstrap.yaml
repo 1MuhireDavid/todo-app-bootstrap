@@ -39,6 +39,26 @@ Parameters:
       The only branch allowed to assume either role. Both trust policies pin
       the ref claim to this branch.
 
+  GitHubOwnerId:
+    Type: String
+    Default: "39764771"
+    AllowedPattern: "^[0-9]+$"
+    Description: >-
+      Numeric GitHub ID of GitHubOwner. GitHub now embeds owner and repository
+      IDs in the OIDC sub claim, as owner@id/repo@id.
+
+  InfraRepoId:
+    Type: String
+    Default: "1367590107"
+    AllowedPattern: "^[0-9]+$"
+    Description: Numeric GitHub ID of the infra repository.
+
+  AppRepoId:
+    Type: String
+    Default: "1367590379"
+    AllowedPattern: "^[0-9]+$"
+    Description: Numeric GitHub ID of the app repository.
+
   CreateOIDCProvider:
     Type: String
     Default: "false"
@@ -335,7 +355,7 @@ Resources:
             Condition:
               StringEquals:
                 "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-                "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOwner}/${InfraRepoName}:ref:refs/heads/${GitHubBranch}"
+                "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOwner}@${GitHubOwnerId}/${InfraRepoName}@${InfraRepoId}:ref:refs/heads/${GitHubBranch}"
       Policies:
         - PolicyName: publish-nested-templates
           PolicyDocument:
@@ -374,7 +394,7 @@ Resources:
             Condition:
               StringEquals:
                 "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-                "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOwner}/${AppRepoName}:ref:refs/heads/${GitHubBranch}"
+                "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOwner}@${GitHubOwnerId}/${AppRepoName}@${AppRepoId}:ref:refs/heads/${GitHubBranch}"
       Policies:
         - PolicyName: push-image-and-deploy-bundle
           PolicyDocument:
