@@ -13,7 +13,6 @@ template-file-path: 00-bootstrap.yaml
 
 parameters:
   ProjectName: todo-app
-  RootStackName: todo-app
 
   GitHubOwner: 1MuhireDavid
   InfraRepoName: todo-app-infra

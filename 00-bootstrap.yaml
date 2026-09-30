@@ -70,15 +70,6 @@ Parameters:
       OIDC provider created. An account holds exactly one provider per URL, so
       a second AWS::IAM::OIDCProvider fails with EntityAlreadyExists.
 
-  RootStackName:
-    Type: String
-    Default: todo-app
-    Description: >-
-      Name the application root stack will be given. Used only to scope the app
-      build role to describe-stacks on that one stack, which is how the build
-      workflow fills the account-specific ARNs and endpoints into taskdef.json
-      instead of having them committed to the application repository.
-
   ImagesToRetain:
     Type: Number
     Default: 5
@@ -216,10 +207,6 @@ Resources:
         Rules:
           - Id: ExpirePipelineArtifacts
             Status: Enabled
-            # No prefix: this covers both the uploaded deploy bundle under
-            # source/ and the artifacts CodePipeline writes under its own
-            # pipeline-name prefix. Where it overlaps the ALB log rule below,
-            # S3 applies the shorter expiration.
             Prefix: ""
             ExpirationInDays: 30
             NoncurrentVersionExpiration:
@@ -376,9 +363,8 @@ Resources:
         - Key: Project
           Value: !Ref ProjectName
 
-  # Role for the app repo build/push workflow: push an image, drop the
-  # appspec/taskdef bundle in the artifact bucket. It deliberately cannot start
-  # the pipeline - the EventBridge rule does that, on the ECR push event.
+  # Push-only by design: the EventBridge rule on the ECR push starts the pipeline,
+  # and the pipeline renders the task definition itself.
   AppBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -396,7 +382,7 @@ Resources:
                 "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
                 "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOwner}@${GitHubOwnerId}/${AppRepoName}@${AppRepoId}:ref:refs/heads/${GitHubBranch}"
       Policies:
-        - PolicyName: push-image-and-deploy-bundle
+        - PolicyName: push-image
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
@@ -419,21 +405,6 @@ Resources:
                   - "ecr:BatchGetImage"
                   - "ecr:DescribeImages"
                 Resource: !GetAtt EcrRepository.Arn
-              - Sid: UploadDeployBundle
-                Effect: Allow
-                Action:
-                  - "s3:PutObject"
-                Resource: !Sub "${ArtifactBucket.Arn}/source/*"
-              - Sid: ReadInfrastructureOutputs
-                Effect: Allow
-                Action:
-                  - "cloudformation:DescribeStacks"
-                # Read-only, and scoped to the one root stack. The workflow uses
-                # this to resolve the execution role ARN, the proxy and Redis
-                # endpoints and the two secret ARNs when it renders taskdef.json
-                # - values that are generated, not guessable, and that nobody
-                # should be pasting into the application repository by hand.
-                Resource: !Sub "arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RootStackName}/*"
       Tags:
         - Key: Project
           Value: !Ref ProjectName
