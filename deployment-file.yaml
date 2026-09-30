@@ -19,8 +19,6 @@ parameters:
   InfraRepoName: todo-app-infra
   AppRepoName: todo-app
   GitHubBranch: main
-  InfraWorkflowFile: package-templates.yml
-  AppWorkflowFile: build-and-push.yml
 
   # The GitHub OIDC provider already exists in account 047719661196, and an
   # account may hold only one per URL. Set this to "true" only in a fresh

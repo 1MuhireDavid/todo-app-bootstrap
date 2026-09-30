@@ -39,19 +39,6 @@ Parameters:
       The only branch allowed to assume either role. Both trust policies pin
       the ref claim to this branch.
 
-  InfraWorkflowFile:
-    Type: String
-    Default: package-templates.yml
-    Description: >-
-      Workflow filename in the infra repo allowed to assume the infra role.
-      Used to build the job_workflow_ref claim, which is what actually pins the
-      trust to one file rather than to the whole repository.
-
-  AppWorkflowFile:
-    Type: String
-    Default: build-and-push.yml
-    Description: Workflow filename in the app repo allowed to assume the app role.
-
   CreateOIDCProvider:
     Type: String
     Default: "false"
@@ -331,9 +318,8 @@ Resources:
         - Key: Project
           Value: !Ref ProjectName
 
-  # Role for the infra repo packaging workflow. It only uploads packaged nested
-  # templates and holds no CloudFormation permissions at all, because the deploy
-  # itself is performed by CloudFormation Git sync, not by CI.
+  # Trust keys on sub: STS ignores GitHub's repository, ref and job_workflow_ref
+  # claims, so conditions on them deny every assume. Git sync deploys, not CI.
   InfraPackagingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -348,16 +334,8 @@ Resources:
             Action: "sts:AssumeRoleWithWebIdentity"
             Condition:
               StringEquals:
-                # aud: the token was minted for STS and not for some other audience.
                 "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-                # repository and ref: right repository, right branch.
-                "token.actions.githubusercontent.com:repository": !Sub "${GitHubOwner}/${InfraRepoName}"
-                "token.actions.githubusercontent.com:ref": !Sub "refs/heads/${GitHubBranch}"
-                # job_workflow_ref is the claim that actually matters. Without
-                # it, any workflow file in the repository can assume this role,
-                # including one added on a branch that later merges. With it,
-                # only this one file at this one ref can.
-                "token.actions.githubusercontent.com:job_workflow_ref": !Sub "${GitHubOwner}/${InfraRepoName}/.github/workflows/${InfraWorkflowFile}@refs/heads/${GitHubBranch}"
+                "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOwner}/${InfraRepoName}:ref:refs/heads/${GitHubBranch}"
       Policies:
         - PolicyName: publish-nested-templates
           PolicyDocument:
@@ -396,9 +374,7 @@ Resources:
             Condition:
               StringEquals:
                 "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-                "token.actions.githubusercontent.com:repository": !Sub "${GitHubOwner}/${AppRepoName}"
-                "token.actions.githubusercontent.com:ref": !Sub "refs/heads/${GitHubBranch}"
-                "token.actions.githubusercontent.com:job_workflow_ref": !Sub "${GitHubOwner}/${AppRepoName}/.github/workflows/${AppWorkflowFile}@refs/heads/${GitHubBranch}"
+                "token.actions.githubusercontent.com:sub": !Sub "repo:${GitHubOwner}/${AppRepoName}:ref:refs/heads/${GitHubBranch}"
       Policies:
         - PolicyName: push-image-and-deploy-bundle
           PolicyDocument:

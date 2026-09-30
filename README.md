@@ -121,10 +121,9 @@ them is about GitHub.
 - `ProjectName` names the ECR repository, both buckets and both roles. Changing
   it replaces resources and cascades into every stack.
 - `InfraRepoName` / `AppRepoName` appear only in the OIDC trust policies. If you
-  rename a repository on GitHub, the `repository` and `job_workflow_ref` claims
-  change immediately — GitHub's redirect covers git remotes, not OIDC — so update
-  the matching parameter here and redeploy, or that repo's workflow starts
-  failing at `sts:AssumeRoleWithWebIdentity`.
+  rename a repository on GitHub, the `sub` claim changes immediately — GitHub's
+  redirect covers git remotes, not OIDC — so update the matching parameter here
+  and redeploy, or that repo's workflow starts failing at `sts:AssumeRoleWithWebIdentity`.
 
 ## Teardown
 
